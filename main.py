@@ -16,8 +16,6 @@ parser.add_argument('-p', '--profile', help='View a profile.')
 parser.add_argument('-b', '--block', help='Block a profile.')
 args = parser.parse_args()
 
-print(args)
-
 SigninUrl = 'https://blips.club/signin'
 StatusUrl = 'https://blips.club/status/create'
 DirectUrl = 'https://blips.club/direct_messages/create'
@@ -25,6 +23,9 @@ FavoriteUrl = 'https://blips.club/favorites/create'
 
 f = open("user.txt", "r")
 UserInfo = f.read().split(", ")
+
+b = open("blocklist.txt", "r")
+BlockList = b.read().split(", ")
 
 AuthPayload = { # used for authentication
     'username': UserInfo[0],
@@ -42,7 +43,7 @@ if args.update:
         'session': cookie_session,
         'status': args.update, 
     }
-    if len(args.debug) >= 140:
+    if len(args.update) >= 140:
         print("Woah there. Condense what you just said (More than 140 characters) and then come back.")
     else:
         UpdateResponse = session.post(StatusUrl, data=UpdatePayload)
@@ -54,17 +55,20 @@ if args.direct:
         'status': args.direct[1],
         'recipient': args.direct[0]
     }
-    if len(args.debug) >= 140:
+    if len(args.direct) >= 140:
         print("Woah there. Condense what you just said (More than 140 characters) and then come back.")
     else:
         DirectResponse = session.post(DirectUrl, data=DirectPayload)
         print("Message sent to " + args.direct[0])
 
 if args.feed:
-    Feed = feedparser.parse("https://blips.club/" + AuthPayload['username'] + "/with_friends.rss")
-    for i in range(10):
-        PostId = re.sub('\D', '', Feed.entries[i].link)
-        print(Feed.entries[i].title + " / Status #" + PostId)
+  Feed = feedparser.parse("https://blips.club/" + AuthPayload['username'] + "/with_friends.rss")
+  for i in range(10):
+    PostId = Feed.entries[i].link.split("/")
+    if PostId[3] in BlockList:
+      pass
+    else:
+      print(Feed.entries[i].title + " / Status #" + PostId[5])
 
 if args.star:
     FavoritePayload = {
@@ -81,4 +85,6 @@ if args.profile:
         print(Feed.entries[i].title + " / Status #" + PostId)
         
 if args.block:
-    print("Not yet.")
+  file1 = open("blocklist.txt", "a")  # append mode
+  file1.write(", " + args.block + ", ")
+  print("User blocked.")
